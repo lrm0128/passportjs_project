@@ -24,7 +24,7 @@
     </style>
     <script src="/bower_components/angular/angular.js"></script>
     <script src="/bower_components/angular-route/angular-route.js"></script>
-    <script>
+<!--    <script>
         var currentUser = '';
         angular.module('myApp',['ngRoute']).factory('UserService',function($http,$q,$location){
             return{
@@ -77,11 +77,6 @@
             if( UserService.data != 'undefined'&& UserService.userName && UserService.userPassword){
                 $scope.data = UserService.data;
             }
-            /*if( UserService.status == false){
-                $location.path('/');
-            }else{
-                $location.path('/userInfo');
-            }*/
 
 
             $http.get('/login/validate').success(function(validatedata){
@@ -131,7 +126,140 @@
         }).controller('userController',function($scope,UserService,$location,$http){
 
             $http.get('/login/validate').success(function(validatedata){
-                $scope.login_user = validatedata.userName;
+                console.log(validatedata.userName);
+                var usertitle = document.getElementById('username');
+                usertitle.innerHTML = validatedata.userName;
+                /*$scope.login_user = validatedata.userName;*/
+                if(validatedata.status == false) {
+                    /*UserService.makeLogin(validatedata.userName,validatedata.userPassword).then(function(data){
+                     currentUser = data.userName;
+                     UserService.data = data;
+                     console.log('login: '+data.userName);
+                     $location.path('/userInfo');
+                     });*/
+                    $location.path('/');
+                }
+
+            });
+
+            $scope.makeLogout = function(login_user) {
+                UserService.makeLogout(login_user);
+            };
+        }).config(function($routeProvider){
+            $routeProvider.when('/',{
+                templateUrl:'/login.html',
+                controller:'loginController'
+            }).when('/userInfo',{
+                templateUrl:'/userInfo.html',
+                controller:'userController'
+            }).otherwise({
+                redirectTo: '/'
+            });
+        });
+    </script>-->
+
+    <script>
+        var currentUser = '';
+        angular.module('myApp',['ngRoute']).factory('UserService',function($http,$q,$location){
+            return{
+                data:null,
+                status:false,
+                userName:'',
+                userPassword:'',
+                makeLogin:function(username,userpass,callback){
+                    var context = this;
+                    $http.post('/login/login',{username:username,password:userpass}).success(function(data){
+                        context.data = data;
+                        context.status = true;
+                        context.userName = username;
+                        context.userPassword = userpass;
+                        callback(data);
+                    });
+                },
+                makeRegister:function(username,userpass,callback){
+                    var context = this;
+                    var deferred = $q.defer();
+                    $http.post('/login/register',{username:username,password:userpass})
+                            .success(function(data){
+                                context.data = data;
+                                context.status = true;
+                                context.userName = username;
+                                context.userPassword = userpass;
+                                callback(data);
+                            });
+                },
+                makeLogout:function(currentuser){
+                    var context = this;
+                    $http.get('/login/logout')
+                            .success(function(data){
+                                console.log(data);
+                                context.status = data.status;
+                                context.userName = '';
+                                context.userPassword = '';
+                                console.log(data.status);
+                                if(data.status == false){
+                                    $location.path('/');
+                                }
+                            });
+                }
+            }
+        }).controller('loginController',function($scope,$location,$http,UserService){
+            if( UserService.data != 'undefined'&& UserService.userName && UserService.userPassword){
+                $scope.data = UserService.data;
+            }
+
+
+            $http.get('/login/validate').success(function(validatedata){
+                if(validatedata.status == true){
+                    /*UserService.makeLogin(validatedata.userName,validatedata.userPassword).then(function(data){
+                     currentUser = data.userName;
+                     UserService.data = data;
+                     console.log('login: '+data.userName);
+                     $location.path('/userInfo');
+                     });*/
+                    $location.path('/userInfo');
+                }else{
+                    $location.path('/');
+                }
+            });
+
+            $scope.makeLogin = function(login){
+                UserService.makeLogin(login.login_name,login.login_password,function(data){
+                    currentUser = data.userName;
+                    UserService.data = data;
+                    UserService.userName = data.userName;
+                    if(data.status){
+                        console.log('login: '+data.userName+' '+login.login_password);
+                        $location.path('/userInfo');
+                    }else{
+                        console.log('user do not exist');
+                    }
+                });
+            };
+
+            $scope.makeRegister = function(reg){
+                UserService.makeRegister(reg.reg_name,reg.reg_password,function(data){
+                    if(!data.status){
+                        UserService.status = false;//user register failed
+                        console.log('user exist!');
+                    }
+                    else{
+                        console.log('register username: '+data.userName);
+                        console.log('register: '+reg.reg_name + ','+reg.reg_password);
+                        currentUser = data.userName;
+                        UserService.status = true;//user register success
+                        $location.path('/userInfo');
+                    }
+                });
+            };
+
+        }).controller('userController',function($scope,UserService,$location,$http){
+
+            $http.get('/login/validate').success(function(validatedata){
+                console.log(validatedata.userName);
+                var usertitle = document.getElementById('username');
+                usertitle.innerHTML = validatedata.userName;
+                /*$scope.login_user = validatedata.userName;*/
                 if(validatedata.status == false) {
                     /*UserService.makeLogin(validatedata.userName,validatedata.userPassword).then(function(data){
                      currentUser = data.userName;
